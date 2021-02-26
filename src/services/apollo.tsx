@@ -3,11 +3,17 @@ import {
   ApolloLink,
   HttpLink,
   InMemoryCache,
+  makeVar,
 } from '@apollo/client'
+import firebase from 'firebase'
 import { setContext } from '@apollo/client/link/context'
 import fetch from 'isomorphic-fetch'
+import { getIdToken } from './localStorage'
 
-// Change to env variable (for Netlify) or set your own API URI
+// Storing user object for global access. this is ephimeral storage
+export const firebaseUser = makeVar<firebase.User | null | 'loading'>('loading')
+
+// Change to env variable (for Netlify) or set your own API URI according to env
 const apiUri = 'https://api.spacex.land/graphql'
 
 const httpLink = new HttpLink({
@@ -16,11 +22,10 @@ const httpLink = new HttpLink({
 })
 
 const withToken = setContext(async () => {
-  // Implement your own token fetching logic.
-  // This may be from local storage, Redux, Firebase, or Cognito instance.
-  // If you have a token, return it as:
-  // return { token }
-  return null
+  // this is opinionated
+  const token = getIdToken()
+  if (!token) return null
+  return { token }
 })
 
 // Sets the header for every GraphQL API call. If a JWT token is present, insert it.
