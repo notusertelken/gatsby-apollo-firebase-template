@@ -8,9 +8,9 @@ import {
 import firebase from 'firebase'
 import { setContext } from '@apollo/client/link/context'
 import fetch from 'isomorphic-fetch'
-import { getIdToken } from './localStorage'
 
 // Storing user object for global access. this is ephimeral storage
+// 'loading' default value is used for waiting on observer on page reload
 export const firebaseUser = makeVar<firebase.User | null | 'loading'>('loading')
 
 // Change to env variable (for Netlify) or set your own API URI according to env
@@ -22,9 +22,11 @@ const httpLink = new HttpLink({
 })
 
 const withToken = setContext(async () => {
-  // this is opinionated
-  const token = getIdToken()
-  if (!token) return null
+  // this implementation is opinionated :
+  // this will be evaluated on each query
+  let token = null
+  if (firebaseUser() && firebaseUser() !== 'loading')
+    token = await (firebaseUser() as firebase.User).getIdToken()
   return { token }
 })
 
